@@ -4,6 +4,12 @@ High-performance kernel and self-tuning engine for StarCraft II AI bots, with ge
 
 SC2AIOptimize exists to make expensive SC2 AI computation cheaper **only when measurement proves the optimisation is worth using**. The baseline implementation is always a valid candidate; an optimisation that does not produce positive measured net benefit is rejected or disabled.
 
+## Status
+
+The **32-slice V1 software programme is 32/32 implemented**. The public API contract is `1.0` with status **`v1-candidate`**: component/build/toolchain proof is in place, while representative target-hardware, real bot/framework integration, behavioural, ladder/runtime and BotOps release evidence remain separate certification gates.
+
+See `docs/STATUS.md` and `docs/V1_CERTIFICATION.md` for the exact proof boundary.
+
 ## Runtime architecture
 
 The runtime is deliberately small:
