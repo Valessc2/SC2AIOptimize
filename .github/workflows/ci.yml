@@ -19,8 +19,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Configure
         run: >-
-          cmake -S . -B build -DSC2OPT_BUILD_TESTS=ON
-          -DSC2OPT_BUILD_BENCHMARKS=ON -DSC2OPT_WARNINGS_AS_ERRORS=ON
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          -DSC2OPT_BUILD_TESTS=ON -DSC2OPT_BUILD_BENCHMARKS=ON
+          -DSC2OPT_WARNINGS_AS_ERRORS=ON
       - name: Build
         run: cmake --build build --config Release
       - name: Test

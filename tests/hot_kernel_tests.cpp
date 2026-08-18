@@ -107,9 +107,29 @@ void TestSpatialEquivalence()
                                             BoundaryMode::Inclusive);
     Check(grid_unordered && grid_unordered.written == baseline_inclusive.written,
           "unordered grid count matches baseline");
-    std::sort(unordered.begin(), unordered.begin() + grid_unordered.written);
-    Check(std::equal(baseline.begin(), baseline.begin() + baseline_inclusive.written,
-                     unordered.begin()),
+
+    std::array<bool, 5> baseline_members{};
+    std::array<bool, 5> unordered_members{};
+    bool membership_indices_valid = true;
+    for (std::size_t i = 0; i < baseline_inclusive.written; ++i)
+    {
+        if (baseline[i] >= baseline_members.size())
+        {
+            membership_indices_valid = false;
+            break;
+        }
+        baseline_members[baseline[i]] = true;
+    }
+    for (std::size_t i = 0; i < grid_unordered.written; ++i)
+    {
+        if (unordered[i] >= unordered_members.size())
+        {
+            membership_indices_valid = false;
+            break;
+        }
+        unordered_members[unordered[i]] = true;
+    }
+    Check(membership_indices_valid && baseline_members == unordered_members,
           "unordered grid membership matches baseline");
 
     const auto baseline_strict =
