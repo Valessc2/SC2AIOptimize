@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -26,16 +27,38 @@ struct TunableSpec {
     std::uint32_t flags = 0;
 };
 
-[[nodiscard]] constexpr bool IsValid(const TunableSpec& spec) noexcept
+[[nodiscard]] inline bool IsIntegralValue(double value) noexcept
 {
-    if (spec.name.empty() || spec.minimum > spec.maximum)
+    return std::isfinite(value) && std::floor(value) == value;
+}
+
+[[nodiscard]] inline bool IsValid(const TunableSpec& spec) noexcept
+{
+    if (spec.name.empty() || !std::isfinite(spec.baseline) || !std::isfinite(spec.minimum) ||
+        !std::isfinite(spec.maximum) || !std::isfinite(spec.step) || spec.minimum > spec.maximum)
+    {
         return false;
+    }
+
     if (spec.baseline < spec.minimum || spec.baseline > spec.maximum)
         return false;
-    if (spec.kind == TunableKind::Boolean)
-        return spec.minimum <= 0.0 && spec.maximum >= 1.0 &&
-               (spec.baseline == 0.0 || spec.baseline == 1.0);
-    return spec.step > 0.0;
+
+    switch (spec.kind)
+    {
+    case TunableKind::Continuous:
+        return spec.step > 0.0;
+    case TunableKind::Integer:
+        return IsIntegralValue(spec.baseline) && IsIntegralValue(spec.minimum) &&
+               IsIntegralValue(spec.maximum) && IsIntegralValue(spec.step) && spec.step >= 1.0;
+    case TunableKind::Boolean:
+        return spec.minimum == 0.0 && spec.maximum == 1.0 &&
+               (spec.baseline == 0.0 || spec.baseline == 1.0) &&
+               (spec.step == 0.0 || spec.step == 1.0);
+    case TunableKind::Choice:
+        return IsIntegralValue(spec.baseline) && IsIntegralValue(spec.minimum) &&
+               IsIntegralValue(spec.maximum) && spec.minimum >= 0.0 && spec.step == 1.0;
+    }
+    return false;
 }
 
 enum class TunableRegistryIssue : std::uint8_t {
