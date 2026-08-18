@@ -68,6 +68,11 @@ ManifestIssue ValidateManifest(const CertificationManifestView& manifest) noexce
 {
     if (manifest.schema_version != kCertificationManifestSchemaVersion)
         return ManifestIssue::SchemaVersion;
+    if (manifest.api_contract_major != sc2opt::kApiContractMajor ||
+        manifest.api_contract_minor != sc2opt::kApiContractMinor)
+    {
+        return ManifestIssue::ApiContractVersion;
+    }
     if (manifest.source_revision.empty() || manifest.generated_utc.empty())
         return ManifestIssue::MissingIdentity;
     if (!IsValid(manifest.hardware))
@@ -99,7 +104,11 @@ bool WriteCertificationManifestJson(std::ostream& out,
     if (ValidateManifest(manifest) != ManifestIssue::None)
         return false;
 
-    out << "{\n  \"schema_version\": " << manifest.schema_version << ",\n  \"source_revision\": ";
+    out << "{\n  \"schema_version\": " << manifest.schema_version
+        << ",\n  \"api_contract\": {\"major\": " << manifest.api_contract_major
+        << ", \"minor\": " << manifest.api_contract_minor << ", \"status\": ";
+    WriteJsonString(out, sc2opt::kApiContractStatus);
+    out << "},\n  \"source_revision\": ";
     WriteJsonString(out, manifest.source_revision);
     out << ",\n  \"generated_utc\": ";
     WriteJsonString(out, manifest.generated_utc);

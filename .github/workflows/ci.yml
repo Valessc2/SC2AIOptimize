@@ -51,3 +51,70 @@ jobs:
         run: cmake --build build-python --config Release
       - name: Test Python adapter
         run: ctest --test-dir build-python -C Release --output-on-failure
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure ASAN + UBSAN
+        run: >-
+          cmake -S . -B build-sanitize -DCMAKE_BUILD_TYPE=Debug
+          -DSC2OPT_BUILD_TESTS=ON -DSC2OPT_WARNINGS_AS_ERRORS=ON
+          -DSC2OPT_ENABLE_ASAN=ON -DSC2OPT_ENABLE_UBSAN=ON
+      - name: Build
+        run: cmake --build build-sanitize --parallel 2
+      - name: Test
+        run: ctest --test-dir build-sanitize --output-on-failure
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-tidy
+        run: sudo apt-get update && sudo apt-get install -y clang-tidy
+      - name: Configure clang-tidy
+        run: >-
+          cmake -S . -B build-tidy -DCMAKE_BUILD_TYPE=Debug
+          -DSC2OPT_BUILD_TESTS=OFF -DSC2OPT_WARNINGS_AS_ERRORS=ON
+          -DSC2OPT_ENABLE_CLANG_TIDY=ON
+      - name: Build with analysis
+        run: cmake --build build-tidy --parallel 2
+
+  installed-consumer:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure installable Release + LTO
+        run: >-
+          cmake -S . -B build-install -DCMAKE_BUILD_TYPE=Release
+          -DSC2OPT_BUILD_TESTS=OFF -DSC2OPT_WARNINGS_AS_ERRORS=ON
+          -DSC2OPT_ENABLE_LTO=ON
+      - name: Build
+        run: cmake --build build-install --config Release
+      - name: Install package
+        run: cmake --install build-install --config Release --prefix "${{ github.workspace }}/stage"
+      - name: Configure unrelated installed consumer
+        run: >-
+          cmake -S tests/install_consumer -B build-consumer
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/stage"
+      - name: Build unrelated installed consumer
+        run: cmake --build build-consumer --config Release
+      - name: Test unrelated installed consumer
+        run: ctest --test-dir build-consumer -C Release --output-on-failure
+
+  avx2-compile-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure explicit AVX2 contract
+        run: >-
+          cmake -S . -B build-avx2 -DCMAKE_BUILD_TYPE=Release
+          -DSC2OPT_BUILD_TESTS=OFF -DSC2OPT_WARNINGS_AS_ERRORS=ON
+          -DSC2OPT_ENABLE_AVX2=ON
+      - name: Compile only
+        run: cmake --build build-avx2 --parallel 2

@@ -1,0 +1,4 @@
+Checks: '-*,clang-analyzer-*'
+WarningsAsErrors: 'clang-analyzer-*'
+HeaderFilterRegex: '^(?!.*(build|_deps)).*SC2AIOptimize.*'
+FormatStyle: none
