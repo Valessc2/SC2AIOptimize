@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "producer": "SC2AIOptimize",
+  "api_contract": {"major": 1, "minor": 0, "status": "v1-candidate"},
+  "certification_manifest_schema": "schemas/sc2aiopt-certification-v1.schema.json",
+  "ownership": {
+    "sc2aiopt": ["runtime implementation", "component correctness", "benchmark/provenance output"],
+    "botops": ["integration policy", "release acceptance", "packaging and ladder certification"]
+  },
+  "consumer_rules": [
+    "validate schema and API contract before consuming evidence",
+    "treat proof layers independently and monotonically",
+    "never infer representative, integration or ladder proof from CI/build success",
+    "reject stale or mismatched source/hardware/workload identities",
+    "permit baseline/OFF when optimisation evidence is non-positive"
+  ]
+}

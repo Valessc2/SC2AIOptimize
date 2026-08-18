@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sc2opt/Version.hpp"
 #include "sc2opt/proof/Profiles.hpp"
 #include "sc2opt/tuner/NetBenefit.hpp"
 
@@ -34,6 +35,8 @@ struct BenchmarkRecord {
 
 struct CertificationManifestView {
     std::uint32_t schema_version = kCertificationManifestSchemaVersion;
+    std::uint16_t api_contract_major = sc2opt::kApiContractMajor;
+    std::uint16_t api_contract_minor = sc2opt::kApiContractMinor;
     std::string_view source_revision;
     std::string_view generated_utc;
     HardwareProfileView hardware{};
@@ -45,6 +48,7 @@ struct CertificationManifestView {
 enum class ManifestIssue : std::uint8_t {
     None,
     SchemaVersion,
+    ApiContractVersion,
     MissingIdentity,
     InvalidHardware,
     InvalidWorkload,

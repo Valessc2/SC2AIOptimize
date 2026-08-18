@@ -4,9 +4,19 @@
   "title": "SC2AIOptimize certification manifest v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "source_revision", "generated_utc", "hardware", "workload", "proof", "benchmarks"],
+  "required": ["schema_version", "api_contract", "source_revision", "generated_utc", "hardware", "workload", "proof", "benchmarks"],
   "properties": {
     "schema_version": {"const": 1},
+    "api_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["major", "minor", "status"],
+      "properties": {
+        "major": {"const": 1},
+        "minor": {"const": 0},
+        "status": {"const": "v1-candidate"}
+      }
+    },
     "source_revision": {"type": "string", "minLength": 1},
     "generated_utc": {"type": "string", "minLength": 1},
     "hardware": {
