@@ -33,6 +33,11 @@ add_library(sc2opt_kernel STATIC
     Kernel/Hot/BatchGeometry.cpp
     Kernel/Hot/Filtering.cpp
     Kernel/Hot/SpatialGrid.cpp
+    Kernel/Compute/CombatEvaluation.cpp
+    Kernel/Compute/Influence.cpp
+    Kernel/Compute/Pathing.cpp
+    Kernel/Compute/Placement.cpp
+    Kernel/Compute/TargetSelection.cpp
 )
 add_library(sc2opt::kernel ALIAS sc2opt_kernel)
 target_include_directories(sc2opt_kernel PUBLIC include)
@@ -99,6 +104,12 @@ if(SC2OPT_BUILD_TESTS)
     target_compile_features(sc2opt_hot_kernel_tests PRIVATE cxx_std_20)
     sc2opt_apply_warnings(sc2opt_hot_kernel_tests)
     add_test(NAME sc2opt_hot_kernel_tests COMMAND sc2opt_hot_kernel_tests)
+
+    add_executable(sc2opt_compute_tests tests/compute_tests.cpp)
+    target_link_libraries(sc2opt_compute_tests PRIVATE sc2opt)
+    target_compile_features(sc2opt_compute_tests PRIVATE cxx_std_20)
+    sc2opt_apply_warnings(sc2opt_compute_tests)
+    add_test(NAME sc2opt_compute_tests COMMAND sc2opt_compute_tests)
 
     add_executable(sc2opt_synthetic_cpp_consumer examples/synthetic_cpp_consumer.cpp)
     target_link_libraries(sc2opt_synthetic_cpp_consumer PRIVATE sc2opt)
