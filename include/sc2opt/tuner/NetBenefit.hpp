@@ -1,5 +1,7 @@
 #pragma once
 
+#include "sc2opt/tuner/Defaults.hpp"
+
 #include <cstdint>
 #include <span>
 
@@ -16,9 +18,9 @@ struct CandidateEvidence {
 };
 
 struct NetBenefitPolicy {
-    std::uint64_t minimum_samples = 1;
-    double minimum_absolute_gain_ns = 0.0;
-    double minimum_relative_gain = 0.0;
+    std::uint64_t minimum_samples = defaults::kOperationalMinimumSamples;
+    double minimum_absolute_gain_ns = static_cast<double>(defaults::kMinimumAbsoluteGainNs);
+    double minimum_relative_gain = defaults::kMinimumRelativeGain;
 };
 
 enum class DecisionReason : std::uint8_t {
