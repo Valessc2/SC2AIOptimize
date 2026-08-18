@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(SC2AIOptimize VERSION 0.1.0 LANGUAGES CXX)
 
 option(SC2OPT_BUILD_TESTS "Build SC2AIOptimize tests" ON)
+option(SC2OPT_BUILD_BENCHMARKS "Build calibration/benchmark tools" OFF)
 option(SC2OPT_BUILD_PYTHON "Build the optional generic Python adapter" OFF)
 option(SC2OPT_WARNINGS_AS_ERRORS "Treat project warnings as errors" OFF)
 
@@ -30,6 +31,8 @@ sc2opt_apply_warnings(sc2opt_registry)
 
 add_library(sc2opt_kernel STATIC
     Kernel/Hot/BatchGeometry.cpp
+    Kernel/Hot/Filtering.cpp
+    Kernel/Hot/SpatialGrid.cpp
 )
 add_library(sc2opt::kernel ALIAS sc2opt_kernel)
 target_include_directories(sc2opt_kernel PUBLIC include)
@@ -91,6 +94,12 @@ if(SC2OPT_BUILD_TESTS)
     sc2opt_apply_warnings(sc2opt_adapter_batch_tests)
     add_test(NAME sc2opt_adapter_batch_tests COMMAND sc2opt_adapter_batch_tests)
 
+    add_executable(sc2opt_hot_kernel_tests tests/hot_kernel_tests.cpp)
+    target_link_libraries(sc2opt_hot_kernel_tests PRIVATE sc2opt)
+    target_compile_features(sc2opt_hot_kernel_tests PRIVATE cxx_std_20)
+    sc2opt_apply_warnings(sc2opt_hot_kernel_tests)
+    add_test(NAME sc2opt_hot_kernel_tests COMMAND sc2opt_hot_kernel_tests)
+
     add_executable(sc2opt_synthetic_cpp_consumer examples/synthetic_cpp_consumer.cpp)
     target_link_libraries(sc2opt_synthetic_cpp_consumer PRIVATE sc2opt)
     target_compile_features(sc2opt_synthetic_cpp_consumer PRIVATE cxx_std_20)
@@ -106,4 +115,11 @@ if(SC2OPT_BUILD_TESTS)
                 ${CMAKE_CURRENT_SOURCE_DIR}/Adapters/Python/tests/test_adapter.py
         )
     endif()
+endif()
+
+if(SC2OPT_BUILD_BENCHMARKS)
+    add_executable(sc2opt_spatial_query_bench Bench/Micro/spatial_query_bench.cpp)
+    target_link_libraries(sc2opt_spatial_query_bench PRIVATE sc2opt)
+    target_compile_features(sc2opt_spatial_query_bench PRIVATE cxx_std_20)
+    sc2opt_apply_warnings(sc2opt_spatial_query_bench)
 endif()

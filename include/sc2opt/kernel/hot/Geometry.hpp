@@ -1,12 +1,18 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
 
 namespace sc2opt::kernel::hot {
 
 struct Vec2 {
     float x = 0.0f;
     float y = 0.0f;
+};
+
+enum class BoundaryMode : std::uint8_t {
+    Strict = 0,
+    Inclusive
 };
 
 [[nodiscard]] constexpr float DistanceSquared(Vec2 a, Vec2 b) noexcept
@@ -16,11 +22,17 @@ struct Vec2 {
     return dx * dx + dy * dy;
 }
 
-[[nodiscard]] constexpr bool WithinRadius(Vec2 a, Vec2 b, float radius) noexcept
+[[nodiscard]] constexpr bool WithinRadius(Vec2 a,
+                                          Vec2 b,
+                                          float radius,
+                                          BoundaryMode boundary = BoundaryMode::Inclusive) noexcept
 {
     if (radius < 0.0f)
         return false;
-    return DistanceSquared(a, b) <= radius * radius;
+    const float distance_squared = DistanceSquared(a, b);
+    const float radius_squared = radius * radius;
+    return boundary == BoundaryMode::Inclusive ? distance_squared <= radius_squared
+                                               : distance_squared < radius_squared;
 }
 
 [[nodiscard]] inline float Distance(Vec2 a, Vec2 b) noexcept

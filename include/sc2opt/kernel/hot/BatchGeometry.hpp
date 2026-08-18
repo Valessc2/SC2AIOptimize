@@ -31,10 +31,11 @@ struct BatchResult {
                                                    Vec2 anchor,
                                                    std::span<float> output) noexcept;
 
-// Writes 1 when a point is within the inclusive radius, otherwise 0.
-[[nodiscard]] BatchResult WithinRadiusMaskFromPoint(std::span<const float> xy,
-                                                    Vec2 anchor,
-                                                    float radius,
-                                                    std::span<std::uint8_t> output) noexcept;
+[[nodiscard]] BatchResult WithinRadiusMaskFromPoint(
+    std::span<const float> xy,
+    Vec2 anchor,
+    float radius,
+    std::span<std::uint8_t> output,
+    BoundaryMode boundary = BoundaryMode::Inclusive) noexcept;
 
 }  // namespace sc2opt::kernel::hot

@@ -43,7 +43,8 @@ BatchResult DistanceSquaredFromPoint(std::span<const float> xy,
 BatchResult WithinRadiusMaskFromPoint(std::span<const float> xy,
                                       Vec2 anchor,
                                       float radius,
-                                      std::span<std::uint8_t> output) noexcept
+                                      std::span<std::uint8_t> output,
+                                      BoundaryMode boundary) noexcept
 {
     const BatchResult validation = Validate(xy, output.size());
     if (!validation)
@@ -56,7 +57,10 @@ BatchResult WithinRadiusMaskFromPoint(std::span<const float> xy,
     {
         const float dx = xy[i * 2] - anchor.x;
         const float dy = xy[i * 2 + 1] - anchor.y;
-        output[i] = static_cast<std::uint8_t>(dx * dx + dy * dy <= radius_squared);
+        const float distance_squared = dx * dx + dy * dy;
+        output[i] = static_cast<std::uint8_t>(
+            boundary == BoundaryMode::Inclusive ? distance_squared <= radius_squared
+                                                : distance_squared < radius_squared);
     }
 
     return validation;
