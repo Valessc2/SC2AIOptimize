@@ -10,6 +10,13 @@ BudgetState UpdateBudgetState(BudgetState previous,
     next.previous_duration_ns = completed_duration_ns;
     next.policy_valid = IsValid(policy);
 
+    if (!policy.enabled)
+    {
+        next.pressure = BudgetPressure::Normal;
+        next.policy_valid = true;
+        return next;
+    }
+
     if (!next.policy_valid)
     {
         next.pressure = BudgetPressure::Hard;
