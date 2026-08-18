@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "REPLACE_ME",
+  "family": "REPLACE_ME",
+  "version": "1",
+  "kind": "representative",
+  "sc2_build": "75689",
+  "data_version": "B89B5D6FA7CBF6452E721311BFBC6CB2",
+  "corpus_identity": "sha256:REPLACE_ME",
+  "source": {
+    "description": "Representative replay/game/workload corpus supplied by the consumer proof flow",
+    "selection_rule": "REPLACE_ME",
+    "cases": []
+  },
+  "certification_role": "not-valid-until-all-placeholders-are-replaced-and-proven"
+}
