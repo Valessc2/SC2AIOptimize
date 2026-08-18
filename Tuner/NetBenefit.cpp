@@ -1,10 +1,18 @@
 #include "sc2opt/tuner/NetBenefit.hpp"
 
 #include <cmath>
-#include <limits>
 
 namespace sc2opt::tuner {
 namespace {
+
+bool PolicyValid(const NetBenefitPolicy& policy) noexcept
+{
+    return policy.minimum_samples > 0 &&
+           std::isfinite(policy.minimum_absolute_gain_ns) &&
+           policy.minimum_absolute_gain_ns >= 0.0 &&
+           std::isfinite(policy.minimum_relative_gain) &&
+           policy.minimum_relative_gain >= 0.0;
+}
 
 bool Eligible(const CandidateEvidence& candidate, const NetBenefitPolicy& policy) noexcept
 {
@@ -17,6 +25,9 @@ bool Eligible(const CandidateEvidence& candidate, const NetBenefitPolicy& policy
 NetBenefitDecision ChooseNetBenefitChampion(std::span<const CandidateEvidence> evidence,
                                             NetBenefitPolicy policy) noexcept
 {
+    if (!PolicyValid(policy))
+        return {kBaselineCandidate, 0.0, 0.0, DecisionReason::PolicyInvalid};
+
     const CandidateEvidence* baseline = nullptr;
     for (const CandidateEvidence& candidate : evidence)
     {

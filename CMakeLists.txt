@@ -51,6 +51,9 @@ add_library(sc2opt_tuner STATIC
     Tuner/Champion.cpp
     Tuner/Context.cpp
     Tuner/Persistence.cpp
+    Tuner/Telemetry.cpp
+    Tuner/BudgetGovernor.cpp
+    Tuner/Calibration.cpp
 )
 add_library(sc2opt::tuner ALIAS sc2opt_tuner)
 target_include_directories(sc2opt_tuner PUBLIC include)
@@ -120,6 +123,12 @@ if(SC2OPT_BUILD_TESTS)
     target_compile_features(sc2opt_tuner_tests PRIVATE cxx_std_20)
     sc2opt_apply_warnings(sc2opt_tuner_tests)
     add_test(NAME sc2opt_tuner_tests COMMAND sc2opt_tuner_tests)
+
+    add_executable(sc2opt_runtime_optimization_tests tests/runtime_optimization_tests.cpp)
+    target_link_libraries(sc2opt_runtime_optimization_tests PRIVATE sc2opt)
+    target_compile_features(sc2opt_runtime_optimization_tests PRIVATE cxx_std_20)
+    sc2opt_apply_warnings(sc2opt_runtime_optimization_tests)
+    add_test(NAME sc2opt_runtime_optimization_tests COMMAND sc2opt_runtime_optimization_tests)
 
     add_executable(sc2opt_synthetic_cpp_consumer examples/synthetic_cpp_consumer.cpp)
     target_link_libraries(sc2opt_synthetic_cpp_consumer PRIVATE sc2opt)

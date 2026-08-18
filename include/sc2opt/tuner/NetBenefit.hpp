@@ -22,6 +22,7 @@ struct NetBenefitPolicy {
 };
 
 enum class DecisionReason : std::uint8_t {
+    PolicyInvalid,
     BaselineInvalid,
     BaselineOnly,
     NoEligibleChallenger,
