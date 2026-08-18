@@ -1,0 +1,30 @@
+# CMake / build outputs
+/build/
+/out/
+/cmake-build-*/
+CMakeUserPresets.json
+
+# Compilers / IDEs
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+*.pdb
+.vs/
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+
+# Generated runtime evidence
+Outputs/*
+!Outputs/README.md

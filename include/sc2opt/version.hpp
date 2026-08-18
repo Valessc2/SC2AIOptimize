@@ -1,0 +1,5 @@
+#pragma once
+
+#define SC2OPT_VERSION_MAJOR 0
+#define SC2OPT_VERSION_MINOR 1
+#define SC2OPT_VERSION_PATCH 0
