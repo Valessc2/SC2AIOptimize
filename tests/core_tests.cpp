@@ -72,29 +72,28 @@ void TestNetBenefitGate()
 {
     using namespace sc2opt::tuner;
 
-    const std::array<CandidateEvidence, 2> slower{{CandidateEvidence{0, 10, 100.0, true},
-                                                   CandidateEvidence{1, 10, 120.0, true}}};
+    const std::array<CandidateEvidence, 2> slower{{CandidateEvidence{0, 20, 100'000.0, true},
+                                                   CandidateEvidence{1, 20, 120'000.0, true}}};
     Check(ChooseNetBenefitChampion(slower).champion == kBaselineCandidate,
           "slower optimisation is rejected");
 
-    const std::array<CandidateEvidence, 2> faster{{CandidateEvidence{0, 10, 100.0, true},
-                                                   CandidateEvidence{1, 10, 70.0, true}}};
+    const std::array<CandidateEvidence, 2> faster{{CandidateEvidence{0, 20, 100'000.0, true},
+                                                   CandidateEvidence{1, 20, 70'000.0, true}}};
     Check(ChooseNetBenefitChampion(faster).champion == 1,
           "faster optimisation becomes champion");
 
-    const std::array<CandidateEvidence, 2> invalid{{CandidateEvidence{0, 10, 100.0, true},
-                                                    CandidateEvidence{1, 10, 50.0, false}}};
+    const std::array<CandidateEvidence, 2> invalid{{CandidateEvidence{0, 20, 100'000.0, true},
+                                                    CandidateEvidence{1, 20, 50'000.0, false}}};
     Check(ChooseNetBenefitChampion(invalid).champion == kBaselineCandidate,
           "incorrect optimisation is rejected regardless of speed");
 
-    const std::array<CandidateEvidence, 2> noisy{{CandidateEvidence{0, 10, 100.0, true},
-                                                  CandidateEvidence{1, 2, 50.0, true}}};
-    Check(ChooseNetBenefitChampion(noisy, NetBenefitPolicy{5, 0.0, 0.0}).champion ==
-              kBaselineCandidate,
+    const std::array<CandidateEvidence, 2> noisy{{CandidateEvidence{0, 20, 100'000.0, true},
+                                                  CandidateEvidence{1, 2, 50'000.0, true}}};
+    Check(ChooseNetBenefitChampion(noisy).champion == kBaselineCandidate,
           "insufficient evidence cannot displace baseline");
 
-    const std::array<CandidateEvidence, 2> marginal{{CandidateEvidence{0, 10, 100.0, true},
-                                                     CandidateEvidence{1, 10, 85.0, true}}};
+    const std::array<CandidateEvidence, 2> marginal{{CandidateEvidence{0, 20, 100'000.0, true},
+                                                     CandidateEvidence{1, 20, 85'000.0, true}}};
     Check(ChooseNetBenefitChampion(marginal, NetBenefitPolicy{5, 0.0, 0.20}).champion ==
               kBaselineCandidate,
           "candidate below configured relative gain is rejected");
