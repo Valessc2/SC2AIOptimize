@@ -1,5 +1,6 @@
 #include "sc2opt/tuner/Champion.hpp"
 #include "sc2opt/tuner/Context.hpp"
+#include "sc2opt/tuner/Defaults.hpp"
 #include "sc2opt/tuner/NetBenefit.hpp"
 #include "sc2opt/tuner/Persistence.hpp"
 #include "sc2opt/tuner/TunableRegistry.hpp"
@@ -7,6 +8,7 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string_view>
 
@@ -23,6 +25,20 @@ void Check(bool condition, std::string_view message)
     }
 }
 
+void TestSeedDefaults()
+{
+    using namespace sc2opt::tuner;
+    static_assert(defaults::kOperationalMinimumSamples == 20);
+    static_assert(defaults::kCertificationMinimumSamples == 50);
+    static_assert(defaults::kMinimumAbsoluteGainNs == 1'000);
+    static_assert(defaults::kMinimumRelativeGain == 0.02);
+    static_assert(defaults::kMaximumControlOverheadFraction == 0.01);
+    static_assert(defaults::kMaximumControlOverheadNs == 50'000);
+    static_assert(defaults::kBudgetResumePercent == 55);
+    static_assert(defaults::kBudgetSoftPercent == 70);
+    static_assert(defaults::kBudgetHardPercent == 95);
+}
+
 void TestTunableRegistry()
 {
     using namespace sc2opt::tuner;
@@ -30,6 +46,10 @@ void TestTunableRegistry()
         TunableSpec{1, "grid.cell", TunableKind::Continuous, 4.0, 2.0, 8.0, 0.5,
                     TunableOnlineSafe},
         TunableSpec{2, "budget.enabled", TunableKind::Boolean, 0.0, 0.0, 1.0, 0.0,
+                    TunableOnlineSafe},
+        TunableSpec{3, "batch.size", TunableKind::Integer, 64.0, 16.0, 1024.0, 16.0,
+                    TunableOnlineSafe},
+        TunableSpec{4, "kernel.choice", TunableKind::Choice, 0.0, 0.0, 3.0, 1.0,
                     TunableOnlineSafe},
     };
     Check(ValidateTunableRegistry(specs).ok(), "valid registry");
@@ -42,6 +62,25 @@ void TestTunableRegistry()
     };
     Check(ValidateTunableRegistry(duplicate).issue == TunableRegistryIssue::DuplicateId,
           "duplicate tunable id rejected");
+
+    const std::array invalid_nan{
+        TunableSpec{5, "bad.nan", TunableKind::Continuous,
+                    std::numeric_limits<double>::quiet_NaN(), 0.0, 1.0, 0.1, 0},
+    };
+    Check(ValidateTunableRegistry(invalid_nan).issue == TunableRegistryIssue::InvalidSpec,
+          "non-finite tunable rejected");
+
+    const std::array invalid_integer{
+        TunableSpec{6, "bad.integer", TunableKind::Integer, 2.5, 0.0, 8.0, 1.0, 0},
+    };
+    Check(ValidateTunableRegistry(invalid_integer).issue == TunableRegistryIssue::InvalidSpec,
+          "non-integral integer tunable rejected");
+
+    const std::array invalid_choice{
+        TunableSpec{7, "bad.choice", TunableKind::Choice, 0.0, 0.0, 2.0, 0.5, 0},
+    };
+    Check(ValidateTunableRegistry(invalid_choice).issue == TunableRegistryIssue::InvalidSpec,
+          "choice tunable requires unit-step integer indices");
 }
 
 void AddSamples(sc2opt::tuner::CandidateStats& stats, double value, int count)
@@ -57,8 +96,8 @@ void TestChampion()
         CandidateStats{0, {}, true},
         CandidateStats{1, {}, true},
     }};
-    AddSamples(stats[0], 100.0, 10);
-    AddSamples(stats[1], 70.0, 10);
+    AddSamples(stats[0], 100'000.0, 20);
+    AddSamples(stats[1], 70'000.0, 20);
 
     ChampionState state{};
     const auto decision = EvaluateChampion(stats, state);
@@ -84,17 +123,21 @@ void TestChampion()
         CandidateStats{0, {}, true},
         CandidateStats{1, {}, true},
     }};
-    for (double value : {90.0, 110.0, 95.0, 105.0, 100.0})
-        Check(noisy[0].total_cost_ns.Add(value), "baseline noisy sample");
-    for (double value : {80.0, 120.0, 90.0, 110.0, 95.0})
-        Check(noisy[1].total_cost_ns.Add(value), "challenger noisy sample");
+    for (int i = 0; i < 20; ++i)
+    {
+        Check(noisy[0].total_cost_ns.Add((i & 1) == 0 ? 90'000.0 : 110'000.0),
+              "baseline noisy sample");
+        Check(noisy[1].total_cost_ns.Add((i & 1) == 0 ? 88'000.0 : 108'000.0),
+              "challenger noisy sample");
+    }
     const auto uncertain = EvaluateChampion(noisy, {});
-    Check(uncertain.champion == kBaselineCandidate,
+    Check(uncertain.champion == kBaselineCandidate &&
+              uncertain.reason == ChampionReason::ChallengerInsufficientConfidence,
           "overlapping confidence keeps baseline");
 
     const std::array<CandidateStats, 2> duplicate{{
-        CandidateStats{0, RunningStats{5, 100.0, 0.0}, true},
-        CandidateStats{0, RunningStats{5, 50.0, 0.0}, true},
+        CandidateStats{0, RunningStats{20, 100'000.0, 0.0}, true},
+        CandidateStats{0, RunningStats{20, 50'000.0, 0.0}, true},
     }};
     Check(EvaluateChampion(duplicate, {}).reason == ChampionReason::EvidenceInvalid,
           "duplicate candidate ids fail closed");
@@ -162,6 +205,7 @@ void TestPersistence()
 
 int main()
 {
+    TestSeedDefaults();
     TestTunableRegistry();
     TestChampion();
     TestContext();
