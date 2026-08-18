@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  build-test:
+  core-build-test:
     strategy:
       fail-fast: false
       matrix:
@@ -23,3 +23,28 @@ jobs:
         run: cmake --build build --config Release
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
+
+  python-adapter:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build-only binding dependency
+        run: python -m pip install --disable-pip-version-check pybind11
+      - name: Configure Python adapter
+        run: >-
+          python -c "import pybind11, subprocess;
+          subprocess.check_call(['cmake','-S','.','-B','build-python',
+          '-DCMAKE_BUILD_TYPE=Release','-DSC2OPT_BUILD_TESTS=ON',
+          '-DSC2OPT_BUILD_PYTHON=ON','-DSC2OPT_WARNINGS_AS_ERRORS=ON',
+          '-Dpybind11_DIR='+pybind11.get_cmake_dir()])"
+      - name: Build Python adapter
+        run: cmake --build build-python --config Release
+      - name: Test Python adapter
+        run: ctest --test-dir build-python -C Release --output-on-failure

@@ -1,12 +1,7 @@
 # Generic Python adapter
 
-The Python adapter will bind the same neutral packed contracts used by the C++ interface. It must not depend on `python-sc2` or any specific bot.
+The optional `_sc2opt` extension binds the same framework-independent Kernel/Registry contracts used by C++ consumers. It has no `python-sc2` or NumPy dependency.
 
-Consumer responsibilities:
+The first boundary accepts standard Python buffer-protocol objects and writes batch results into caller-owned buffers. This makes `array.array`, `memoryview`, NumPy (when a consumer already uses it), and other compatible arrays viable without forcing a data-library dependency on SC2AIOptimize.
 
-- translate framework objects into SC2AIOptimize packed/native views;
-- batch crossings so Python/native transition overhead is amortised;
-- map consumer unit/type identifiers to `SC2Registry` during startup/validation;
-- keep policy/final decisions in the consuming bot unless a generic Kernel operation explicitly owns the computation.
-
-`pybind11` is the intended optional binding mechanism unless measurement later proves a different boundary materially better. It is not a core/runtime dependency when Python support is disabled.
+`pybind11` is optional and build-time only. It is not a dependency of the C++ core, and the binding implementation remains challengeable under the project's net-benefit rule.
