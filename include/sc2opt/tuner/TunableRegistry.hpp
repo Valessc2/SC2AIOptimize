@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string_view>
 
 namespace sc2opt::tuner {
@@ -30,7 +32,34 @@ struct TunableSpec {
         return false;
     if (spec.baseline < spec.minimum || spec.baseline > spec.maximum)
         return false;
-    return spec.kind == TunableKind::Boolean || spec.step >= 0.0;
+    if (spec.kind == TunableKind::Boolean)
+        return spec.minimum <= 0.0 && spec.maximum >= 1.0 &&
+               (spec.baseline == 0.0 || spec.baseline == 1.0);
+    return spec.step > 0.0;
 }
+
+enum class TunableRegistryIssue : std::uint8_t {
+    None,
+    InvalidSpec,
+    DuplicateId,
+    DuplicateName
+};
+
+struct TunableRegistryValidation {
+    TunableRegistryIssue issue = TunableRegistryIssue::None;
+    std::size_t index = 0;
+    std::size_t conflicting_index = 0;
+
+    [[nodiscard]] constexpr bool ok() const noexcept { return issue == TunableRegistryIssue::None; }
+};
+
+[[nodiscard]] TunableRegistryValidation ValidateTunableRegistry(
+    std::span<const TunableSpec> specs) noexcept;
+
+[[nodiscard]] const TunableSpec* FindTunableById(std::span<const TunableSpec> specs,
+                                                std::uint32_t id) noexcept;
+
+[[nodiscard]] const TunableSpec* FindTunableByName(std::span<const TunableSpec> specs,
+                                                  std::string_view name) noexcept;
 
 }  // namespace sc2opt::tuner
