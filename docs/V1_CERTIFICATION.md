@@ -2,7 +2,7 @@
 
 ## Implementation
 
-The 32-slice V1 software programme is implemented when S31-S32 land:
+The 32-slice V1 software programme is **32/32 implemented**:
 
 - S01-S04 foundation;
 - S05-S08 generic C++/Python consumption;
@@ -12,11 +12,19 @@ The 32-slice V1 software programme is implemented when S31-S32 land:
 - S31 toolchain hardening;
 - S32 stable API/schema + BotOps integration contract.
 
+The public API contract is `1.0` with status `v1-candidate`. Package/source version remains pre-1.0 until the external certification gates close.
+
 This is **not the same statement as V1 runtime certification**.
 
-## Certification layers
+## Proven component layers
 
-Current repository/CI work can prove source/design and build/tests. The following remain external evidence gates before the API status can be promoted from `v1-candidate` to a certified V1 release:
+Repository CI has proven the source/build/component layer across Ubuntu and Windows core builds/tests, generic Python adapters, ASAN+UBSAN, clang-tidy, install/export consumption with LTO on both operating systems, and an explicit AVX2 compile contract.
+
+Those results do not claim target-hardware performance or bot/ladder behaviour.
+
+## Certification layers still outstanding
+
+The following remain external evidence gates before the API status can be promoted from `v1-candidate` to a certified V1 release:
 
 1. representative target-hardware benchmark corpus with recorded p50/p95/p99 and net-benefit/crossover decisions;
 2. generic real consumer integration evidence (at minimum one C++ and one Python bot/framework integration beyond synthetic consumers);
