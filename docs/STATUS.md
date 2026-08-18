@@ -1,20 +1,19 @@
 # Development status
 
-SC2AIOptimize has a 32-slice V1 implementation programme. Implementation presence is not runtime/performance certification.
+SC2AIOptimize's 32-slice V1 software programme is **32/32 implemented**. Implementation presence is not runtime/performance certification.
 
-## Implemented/merged before S31-S32
+## Implemented
 
 - **S01-S04:** foundation and exact Base75689 SC2Registry provenance.
 - **S05-S08:** generic C++/Python interfaces and synthetic unrelated consumer proof.
 - **S09-S19:** Kernel Hot/Compute foundations and correctness/equivalence contracts.
 - **S20-S27:** cheap Tuner, baseline/OFF selection, telemetry, budget governor and calibration.
 - **S28-S30:** deterministic deep tests, reproducible profiles, proof-only manifests and schemas.
+- **S31-S32:** sanitizer/static-analysis/LTO/PGO/ISA gates, performance-regression tooling, exported CMake consumer packaging, API contract `1.0` (`v1-candidate`) and the BotOps evidence handshake.
 
-## S31-S32 implementation
+## Component proof
 
-S31-S32 add sanitizer/static-analysis/LTO/PGO/ISA gates, performance-regression tooling, exported CMake consumer packaging, API contract `1.0` (`v1-candidate`) and the BotOps evidence handshake.
-
-When this change passes its component CI and lands, the **software programme is 32/32 implemented**.
+The S31-S32 integration gate passed Ubuntu and Windows core builds/tests, Ubuntu and Windows Python adapters, ASAN+UBSAN, clang-tidy, Ubuntu and Windows installed-package consumers with LTO, and the explicit AVX2 compile gate. CI/build success proves component/build layers only; it is not representative runtime certification.
 
 ## Certification still outstanding
 
