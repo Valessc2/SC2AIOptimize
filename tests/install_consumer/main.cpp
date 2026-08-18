@@ -12,8 +12,8 @@ int main()
         return 1;
 
     const std::array evidence{
-        sc2opt::tuner::CandidateEvidence{0, 10, 100.0, true},
-        sc2opt::tuner::CandidateEvidence{1, 10, 80.0, true},
+        sc2opt::tuner::CandidateEvidence{0, 20, 100'000.0, true},
+        sc2opt::tuner::CandidateEvidence{1, 20, 80'000.0, true},
     };
     return sc2opt::tuner::ChooseNetBenefitChampion(evidence).champion == 1 ? 0 : 2;
 }
