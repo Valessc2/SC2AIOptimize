@@ -26,10 +26,16 @@ struct Lcg {
     }
 };
 
+struct TimingSummary {
+    std::uint64_t p50 = 0;
+    std::uint64_t p95 = 0;
+    std::uint64_t p99 = 0;
+};
+
 template <typename Function>
-std::uint64_t MedianNanoseconds(Function&& function)
+TimingSummary MeasureNanoseconds(Function&& function)
 {
-    std::array<std::uint64_t, 11> samples{};
+    std::array<std::uint64_t, 31> samples{};
     std::uint64_t checksum = 0;
     for (std::size_t i = 0; i < samples.size(); ++i)
     {
@@ -40,10 +46,14 @@ std::uint64_t MedianNanoseconds(Function&& function)
             std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start).count());
     }
     std::sort(samples.begin(), samples.end());
-    // Keep observable work outside the timed region.
     if (checksum == 0xFFFFFFFFFFFFFFFFull)
         std::cerr << "checksum sentinel\n";
-    return samples[samples.size() / 2];
+
+    const auto percentile = [&](std::size_t numerator) {
+        const std::size_t rank = (samples.size() * numerator + 99u) / 100u;
+        return samples[std::min(rank == 0 ? 0u : rank - 1u, samples.size() - 1u)];
+    };
+    return {percentile(50), percentile(95), percentile(99)};
 }
 
 std::uint64_t RunQueries(const std::vector<float>& xy,
@@ -123,9 +133,11 @@ int main()
     constexpr float radius = 8.0f;
     constexpr float cell_size = 4.0f;
 
-    std::cout << "# synthetic calibration only; do not treat CI timing as certification\n";
-    std::cout << "points,queries,cell_size,radius,baseline_total_ns,grid_stable_total_ns,"
-                 "grid_unordered_total_ns\n";
+    std::cout << "# profile=spatial.synthetic.v1 seed=0x12345678 samples=31\n";
+    std::cout << "# synthetic calibration only; CI timing is never certification\n";
+    std::cout << "points,queries,cell_size,radius,baseline_p50_ns,baseline_p95_ns,baseline_p99_ns,"
+                 "grid_stable_p50_ns,grid_stable_p95_ns,grid_stable_p99_ns,"
+                 "grid_unordered_p50_ns,grid_unordered_p95_ns,grid_unordered_p99_ns\n";
 
     for (const std::size_t point_count : sizes)
     {
@@ -148,19 +160,21 @@ int main()
             return 2;
         }
 
-        const auto baseline_ns = MedianNanoseconds(
-            [&] { return RunQueries(xy, centers, radius, baseline); });
-        const auto stable_ns = MedianNanoseconds([&] {
+        const TimingSummary baseline_ns =
+            MeasureNanoseconds([&] { return RunQueries(xy, centers, radius, baseline); });
+        const TimingSummary stable_ns = MeasureNanoseconds([&] {
             return RunGridQueries(grid, xy, centers, radius, candidate,
                                   sc2opt::kernel::hot::SpatialOrder::InputOrder);
         });
-        const auto unordered_ns = MedianNanoseconds([&] {
+        const TimingSummary unordered_ns = MeasureNanoseconds([&] {
             return RunGridQueries(grid, xy, centers, radius, candidate,
                                   sc2opt::kernel::hot::SpatialOrder::Unordered);
         });
 
         std::cout << point_count << ',' << query_count << ',' << cell_size << ',' << radius << ','
-                  << baseline_ns << ',' << stable_ns << ',' << unordered_ns << '\n';
+                  << baseline_ns.p50 << ',' << baseline_ns.p95 << ',' << baseline_ns.p99 << ','
+                  << stable_ns.p50 << ',' << stable_ns.p95 << ',' << stable_ns.p99 << ','
+                  << unordered_ns.p50 << ',' << unordered_ns.p95 << ',' << unordered_ns.p99 << '\n';
     }
 
     return 0;

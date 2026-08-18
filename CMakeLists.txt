@@ -80,6 +80,18 @@ target_link_libraries(sc2opt INTERFACE
     sc2opt_adapters
 )
 
+if(SC2OPT_BUILD_TESTS OR SC2OPT_BUILD_BENCHMARKS)
+    add_library(sc2opt_proof STATIC
+        Proof/Profiles.cpp
+        Proof/Manifest.cpp
+    )
+    add_library(sc2opt::proof ALIAS sc2opt_proof)
+    target_include_directories(sc2opt_proof PUBLIC include)
+    target_link_libraries(sc2opt_proof PUBLIC sc2opt_tuner)
+    target_compile_features(sc2opt_proof PUBLIC cxx_std_20)
+    sc2opt_apply_warnings(sc2opt_proof)
+endif()
+
 if(SC2OPT_BUILD_PYTHON)
     find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
     set(PYBIND11_FINDPYTHON ON)
@@ -129,6 +141,18 @@ if(SC2OPT_BUILD_TESTS)
     target_compile_features(sc2opt_runtime_optimization_tests PRIVATE cxx_std_20)
     sc2opt_apply_warnings(sc2opt_runtime_optimization_tests)
     add_test(NAME sc2opt_runtime_optimization_tests COMMAND sc2opt_runtime_optimization_tests)
+
+    add_executable(sc2opt_deep_contract_tests tests/deep_contract_tests.cpp)
+    target_link_libraries(sc2opt_deep_contract_tests PRIVATE sc2opt)
+    target_compile_features(sc2opt_deep_contract_tests PRIVATE cxx_std_20)
+    sc2opt_apply_warnings(sc2opt_deep_contract_tests)
+    add_test(NAME sc2opt_deep_contract_tests COMMAND sc2opt_deep_contract_tests)
+
+    add_executable(sc2opt_manifest_tests tests/manifest_tests.cpp)
+    target_link_libraries(sc2opt_manifest_tests PRIVATE sc2opt_proof)
+    target_compile_features(sc2opt_manifest_tests PRIVATE cxx_std_20)
+    sc2opt_apply_warnings(sc2opt_manifest_tests)
+    add_test(NAME sc2opt_manifest_tests COMMAND sc2opt_manifest_tests)
 
     add_executable(sc2opt_synthetic_cpp_consumer examples/synthetic_cpp_consumer.cpp)
     target_link_libraries(sc2opt_synthetic_cpp_consumer PRIVATE sc2opt)
