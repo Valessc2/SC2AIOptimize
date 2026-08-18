@@ -8,15 +8,25 @@
 
 ## S26 — compute-budget governor
 
-The governor generalises the MMEvo Z7 latency-hysteresis pattern without importing MME policy. The default thresholds retain the proven seed values (22 ms resume, 28 ms soft, 38 ms hard), but consumers own the budget policy and classify their own work as `Critical`, `Important` or `Optional`.
+The governor generalises the MMEvo Z7 latency-hysteresis pattern without importing MME policy. **The governor is disabled by default.** When disabled it always reports Normal pressure and permits all consumer work.
+
+A consumer may explicitly delegate a full compute envelope using `BudgetPolicyFromEnvelope`. The default helper converts that consumer-owned value into:
+
+- resume: 55% of envelope
+- soft: 70% of envelope
+- hard: 95% of envelope
+
+For example, a consumer that explicitly supplies a 40 ms envelope receives 22/28/38 ms thresholds. SC2AIOptimize never invents the 40 ms envelope itself.
+
+When enabled:
 
 - Normal: all declared work is allowed.
-- Soft: Optional work is shed.
-- Hard: only Critical work is allowed.
+- Soft: consumer-declared Optional work is shed.
+- Hard: only consumer-declared Critical work is allowed.
 - Between resume and soft thresholds, previous pressure is retained to prevent oscillation.
-- Invalid threshold ordering fails closed to Hard.
+- Invalid enabled threshold ordering fails closed to Hard.
 
-The governor never decides what gameplay work *means* and never times work itself; it consumes the previous completed duration.
+The governor never decides what gameplay work means and never times work itself; it consumes the previous completed duration. A consumer that does not delegate shedding authority is completely unaffected.
 
 ## S27 — auto-calibration
 
@@ -24,20 +34,26 @@ The governor never decides what gameplay work *means* and never times work itsel
 
 This preserves one authority for net-benefit semantics. Calibration does not duplicate the selection rule and may produce baseline/OFF for any workload range.
 
-`CheckControlOverhead` makes the optimiser measure itself: a selector/calibration/control path can be rejected when measured overhead exceeds an absolute and/or fractional budget. The default fractional ceiling is 1% of chosen work; target projects may choose stricter values.
+`CheckControlOverhead` makes the optimiser measure itself. The V1 seed ceiling is both 1% of chosen work and 50 microseconds absolute. Consumers may choose stricter or looser values; these are admission priors, not performance caps.
+
+## Seed candidate sets
+
+The initial geometric/discrete search sets are:
+
+- workload N: 8/16/32/64/128/256/512/1024
+- batch size: 16/32/64/128/256/512/1024
+- spatial cell size: 2/3/4/6/8/12
+
+Calibration is expected to reject, narrow or replace these per hardware/workload context.
 
 ## Runtime target
 
 ```text
 fixed/compiled telemetry when justified
-        -> previous completed duration
-        -> tiny hysteresis state
-        -> context/crossover champion ID
+        -> previous completed duration (only if consumer enabled a governor)
+        -> tiny hysteresis/context state
+        -> already-resolved champion ID
         -> chosen implementation
 ```
 
 Discovery and benchmarking remain control-plane/offline operations. The hot path should execute an already-resolved choice, not search for one.
-
-## Evidence status
-
-S25-S27 implementation and component tests do not certify a target-hardware speedup. Representative benchmark profiles, target-hardware crossover values and consumer integration evidence remain S28-S32 work.
