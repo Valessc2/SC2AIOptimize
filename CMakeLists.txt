@@ -217,6 +217,12 @@ if(SC2OPT_BUILD_TESTS)
         target_compile_features(sc2opt_c_abi_tests PRIVATE cxx_std_20)
         sc2opt_apply_project_settings(sc2opt_c_abi_tests)
         add_test(NAME sc2opt_c_abi_tests COMMAND sc2opt_c_abi_tests)
+
+        add_executable(sc2opt_cpp14_c_abi_consumer tests/cpp14_c_abi_consumer.cpp)
+        target_link_libraries(sc2opt_cpp14_c_abi_consumer PRIVATE sc2opt_c)
+        target_compile_features(sc2opt_cpp14_c_abi_consumer PRIVATE cxx_std_14)
+        sc2opt_apply_project_settings(sc2opt_cpp14_c_abi_consumer)
+        add_test(NAME sc2opt_cpp14_c_abi_consumer COMMAND sc2opt_cpp14_c_abi_consumer)
     endif()
 
     if(SC2OPT_BUILD_PYTHON)
