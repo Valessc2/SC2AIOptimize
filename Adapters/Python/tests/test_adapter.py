@@ -4,6 +4,32 @@ import _sc2opt
 
 
 def main() -> None:
+    contract = _sc2opt.integration_contract()
+    assert contract["api_major"] == 1
+    assert contract["api_minor"] >= 1
+    assert contract["unit_view_abi"] == 1
+    assert contract["package_version"] == "0.1.0-dev"
+    assert contract["sc2_build"] == "75689"
+    assert contract["data_version"] == "B89B5D6FA7CBF6452E721311BFBC6CB2"
+    assert contract["capabilities"] != 0
+
+    report = _sc2opt.check_integration()
+    assert report["ready"] is True
+    assert report["status"] == "ready"
+    assert report["missing_capabilities"] == 0
+
+    major_mismatch = _sc2opt.check_integration(api_major=2)
+    assert major_mismatch["ready"] is False
+    assert major_mismatch["status"] == "api_major_mismatch"
+
+    missing_bit = 1 << 63
+    missing = _sc2opt.check_integration(
+        required_capabilities=contract["capabilities"] | missing_bit
+    )
+    assert missing["ready"] is False
+    assert missing["status"] == "missing_capability"
+    assert missing["missing_capabilities"] == missing_bit
+
     xy = array("f", [0.0, 0.0, 3.0, 4.0, 6.0, 8.0])
     distances = array("f", [0.0, 0.0, 0.0])
 
