@@ -4,6 +4,14 @@ High-performance kernel and self-tuning engine for StarCraft II AI, with generic
 
 SC2AIOptimize exists to make expensive SC2 AI computation cheaper **only when measurement proves the optimisation is worth using**. The baseline implementation is always a valid candidate; an optimisation that does not produce positive measured net benefit is rejected or disabled.
 
+## Consumer privacy boundary
+
+SC2AIOptimize is the **public, generic** optimisation engine. It supports public or private consumers through bot-neutral adapters and the shared integration contract.
+
+Private consumer repositories, private integration/orchestration layers and private bot topology are intentionally **not enumerated or linked from this public README**. That information belongs in the private consumer repositories. This keeps SC2AIOptimize reusable and policy-neutral while avoiding unnecessary disclosure of private integration design.
+
+The public project must not acquire bot-specific strategy, private orchestration policy, private map/spatial authority or private training/runtime ownership merely because a private consumer uses it.
+
 ## Status
 
 The **32-slice V1 software programme is 32/32 implemented**. The public API contract is `1.1` with status **`v1-candidate`**: component/build/toolchain proof is in place, while representative target-hardware, real bot/framework integration, behavioural, ladder/runtime and BotOps release evidence remain separate certification gates.
