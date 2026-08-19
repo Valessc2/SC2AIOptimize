@@ -1,3 +1,4 @@
+#include "sc2opt/adapters/IntegrationContract.hpp"
 #include "sc2opt/adapters/cpp/DenseTypeMap.hpp"
 #include "sc2opt/kernel/hot/BatchGeometry.hpp"
 #include "sc2opt/registry/SC2Registry.hpp"
@@ -80,12 +81,67 @@ void TestDenseTypeMap()
           "duplicate consumer id fails closed");
 }
 
+void TestIntegrationContract()
+{
+    using namespace sc2opt::adapters;
+
+    const auto contract = CurrentIntegrationContract();
+    Check(contract.api_major == sc2opt::kApiContractMajor &&
+              contract.api_minor == sc2opt::kApiContractMinor,
+          "integration contract API identity");
+    Check(contract.unit_view_abi == sc2opt::model::kUnitViewAbiVersion,
+          "integration contract UnitView ABI identity");
+    Check(contract.sc2_build == sc2opt::registry::kBase75689Build &&
+              contract.data_version == sc2opt::registry::kBase75689DataVersion,
+          "integration contract registry identity");
+    Check((contract.capabilities & kSharedIntegrationCapabilities) ==
+              kSharedIntegrationCapabilities,
+          "integration contract shared capability set");
+
+    Check(CheckIntegrationCompatibility(IntegrationRequirements{}).ready(),
+          "default integration requirements are compatible");
+
+    IntegrationRequirements requirements{};
+    requirements.api_major += 1u;
+    Check(CheckIntegrationCompatibility(requirements).status == IntegrationStatus::ApiMajorMismatch,
+          "integration rejects API major mismatch");
+
+    requirements = {};
+    requirements.minimum_api_minor = contract.api_minor + 1u;
+    Check(CheckIntegrationCompatibility(requirements).status == IntegrationStatus::ApiMinorTooOld,
+          "integration rejects too-new API minor requirement");
+
+    requirements = {};
+    requirements.unit_view_abi += 1u;
+    Check(CheckIntegrationCompatibility(requirements).status == IntegrationStatus::UnitViewAbiMismatch,
+          "integration rejects UnitView ABI mismatch");
+
+    requirements = {};
+    requirements.sc2_build = "99999";
+    Check(CheckIntegrationCompatibility(requirements).status == IntegrationStatus::RegistryBuildMismatch,
+          "integration rejects registry build mismatch");
+
+    requirements = {};
+    requirements.data_version = "NOT_THE_PINNED_DATA_VERSION";
+    Check(CheckIntegrationCompatibility(requirements).status ==
+              IntegrationStatus::RegistryDataVersionMismatch,
+          "integration rejects registry data-version mismatch");
+
+    requirements = {};
+    requirements.required_capabilities |= (1ull << 63);
+    const auto missing = CheckIntegrationCompatibility(requirements);
+    Check(missing.status == IntegrationStatus::MissingCapability &&
+              missing.missing_capabilities == (1ull << 63),
+          "integration reports missing capability bits");
+}
+
 }  // namespace
 
 int main()
 {
     TestBatchGeometry();
     TestDenseTypeMap();
+    TestIntegrationContract();
 
     if (failures == 0)
     {
