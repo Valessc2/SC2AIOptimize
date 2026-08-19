@@ -36,7 +36,7 @@ typedef enum sc2opt_c_integration_status {
 
 typedef enum sc2opt_c_integration_capability {
     SC2OPT_C_CAP_CPU_BASELINE = 1u << 0,
-    SC2OPT_C_CAP_SAFE_DISABLE = 1u << 1,
+    SC2OPT_C_CAP_COMPATIBILITY_GATE = 1u << 1,
     SC2OPT_C_CAP_REGISTRY_IDENTITY = 1u << 2,
     SC2OPT_C_CAP_BATCH_GEOMETRY = 1u << 3
 } sc2opt_c_integration_capability;
@@ -53,6 +53,8 @@ SC2OPT_C_API uint64_t sc2opt_c_integration_capabilities(void);
 // Startup compatibility gate shared by native consumers. Empty/null build or data-version
 // strings mean "consumer does not constrain this field". `missing_capabilities` is optional.
 // A non-ready result means the consumer must keep its normal baseline/OFF path active.
+// This gate assumes the SC2AIOptimize library has already been loaded; optional loading and
+// missing-library fallback remain consumer/package responsibilities.
 SC2OPT_C_API sc2opt_c_integration_status sc2opt_c_check_integration(
     uint32_t expected_api_major,
     uint32_t minimum_api_minor,
