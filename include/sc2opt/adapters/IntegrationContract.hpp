@@ -31,8 +31,8 @@ enum class IntegrationStatus : std::uint8_t {
 };
 
 struct IntegrationContract {
-    std::uint16_t api_major = 0;
-    std::uint16_t api_minor = 0;
+    std::uint32_t api_major = 0;
+    std::uint32_t api_minor = 0;
     std::uint32_t unit_view_abi = 0;
     std::string_view package_version;
     std::string_view sc2_build;
@@ -41,8 +41,8 @@ struct IntegrationContract {
 };
 
 struct IntegrationRequirements {
-    std::uint16_t api_major = kApiContractMajor;
-    std::uint16_t minimum_api_minor = kApiContractMinor;
+    std::uint32_t api_major = kApiContractMajor;
+    std::uint32_t minimum_api_minor = kApiContractMinor;
     std::uint32_t unit_view_abi = model::kUnitViewAbiVersion;
     std::string_view sc2_build = registry::kBase75689Build;
     std::string_view data_version = registry::kBase75689DataVersion;
