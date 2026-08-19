@@ -8,7 +8,13 @@ SC2AIOptimize has three runtime pillars and no bot/framework ownership:
 2. **Kernel** — framework-independent compute.
 3. **Tuner** — cheap evidence-based selection/configuration.
 
-`Adapters/Cpp` and `Adapters/Python` are generic integration surfaces. MetaSwarm, MicroMachineEvo and future bots adapt their own state into SC2AIOptimize contracts. The core never includes SC2API or python-sc2 types.
+`Adapters/Cpp`, the stable C ABI and `Adapters/Python` are generic integration surfaces. MetaSwarm, MicroMachineEvo and future bots adapt their own state into SC2AIOptimize contracts. The core never includes SC2API or python-sc2 types.
+
+## Shared integration connector
+
+`sc2opt/adapters/IntegrationContract.hpp` is the one compatibility authority in front of those language edges. It validates API generation, neutral view ABI, registry identity and generic capability availability. C/C++14 and Python consumers reach the same authority through their respective edges rather than maintaining bot-specific compatibility logic.
+
+The connector does not own framework traversal, bot state, packing policy, gameplay decisions or consumer lifecycle. A failed compatibility gate means the optimisation path is not admitted; the consumer's baseline remains authoritative.
 
 ## Dependency direction
 
@@ -16,7 +22,12 @@ SC2AIOptimize has three runtime pillars and no bot/framework ownership:
 consumer bot/framework
         |
         v
- generic adapter contract
+consumer-owned translation / packing
+        |
+        v
+shared integration compatibility contract
+        |
+        +----> C++20 / C ABI / Python language edge
         |
         +----> SC2Registry
         |

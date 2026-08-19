@@ -6,7 +6,9 @@ SC2AIOptimize exists to make expensive SC2 AI computation cheaper **only when me
 
 ## Status
 
-The **32-slice V1 software programme is 32/32 implemented**. The public API contract is `1.0` with status **`v1-candidate`**: component/build/toolchain proof is in place, while representative target-hardware, real bot/framework integration, behavioural, ladder/runtime and BotOps release evidence remain separate certification gates.
+The **32-slice V1 software programme is 32/32 implemented**. The public API contract is `1.1` with status **`v1-candidate`**: component/build/toolchain proof is in place, while representative target-hardware, real bot/framework integration, behavioural, ladder/runtime and BotOps release evidence remain separate certification gates.
+
+API `1.1` is an additive extension of `1.0` that adds the shared bot-neutral integration compatibility contract. Existing `1.0` consumers remain valid.
 
 Production seed policies and multi-language edge adapters are maintained as post-programme V1 polish. They are defaults and optional integrations, not bot-performance limits.
 
@@ -20,6 +22,9 @@ The runtime is deliberately small:
 - **Kernel** — framework-independent compute. `Hot` contains tiny proven hot-path primitives; larger compute belongs in Kernel only when profiling justifies the native boundary.
 - **Tuner** — cheap selection and tuning. Baseline/champion/challenger, confidence and context live here; expensive discovery is not paid on every hot call.
 - **Adapters** — direct generic C++, optional Python buffer binding, optional stable C ABI, and thin Rust/Go/.NET/Java/Node edges. Consumers adapt to SC2AIOptimize; SC2AIOptimize does not depend on a bot framework.
+- **Shared integration contract** — one startup compatibility authority for API generation, neutral view ABI, pinned registry identity and generic capabilities, exposed through the language edges rather than duplicated per bot.
+
+The stable C ABI allows older native consumers such as a C++14 bot to use the shared connector without importing the C++20 public surface. The Python edge exposes the same compatibility authority for Python consumers. A non-ready handshake keeps the consumer on its baseline/OFF path; optional loading and package-presence fallback remain consumer/deployment responsibilities.
 
 The core has no dependency on SC2API, python-sc2, MetaSwarm, MicroMachineEvo, BotOps or an ML runtime.
 
@@ -46,4 +51,4 @@ The compute-budget governor is **OFF by default**. A consumer may explicitly del
 
 Total cost includes adapter, dispatch and bookkeeping overhead. `OFF` / baseline is a first-class champion.
 
-See `docs/ARCHITECTURE.md`, `docs/PROGRAMME.md`, `docs/TUNER.md`, `Adapters/AIArena/README.md` and `docs/MMEVO_Z_MIGRATION.md`.
+See `docs/ARCHITECTURE.md`, `docs/ADAPTERS.md`, `docs/PROGRAMME.md`, `docs/TUNER.md`, `Adapters/AIArena/README.md` and `docs/MMEVO_Z_MIGRATION.md`.

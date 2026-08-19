@@ -2,10 +2,12 @@
 #include "sc2opt/adapters/c/sc2opt_c.h"
 
 #include "sc2opt/Version.hpp"
+#include "sc2opt/adapters/IntegrationContract.hpp"
 #include "sc2opt/kernel/hot/BatchGeometry.hpp"
 #include "sc2opt/registry/SC2Registry.hpp"
 
 #include <span>
+#include <string_view>
 
 namespace {
 
@@ -23,6 +25,29 @@ sc2opt_c_status ToCStatus(sc2opt::kernel::hot::BatchStatus status) noexcept
         return SC2OPT_C_INVALID_ARGUMENT;
     }
     return SC2OPT_C_INTERNAL_ERROR;
+}
+
+sc2opt_c_integration_status ToCIntegrationStatus(sc2opt::adapters::IntegrationStatus status) noexcept
+{
+    using sc2opt::adapters::IntegrationStatus;
+    switch (status)
+    {
+    case IntegrationStatus::Ready:
+        return SC2OPT_C_INTEGRATION_READY;
+    case IntegrationStatus::ApiMajorMismatch:
+        return SC2OPT_C_INTEGRATION_API_MAJOR_MISMATCH;
+    case IntegrationStatus::ApiMinorTooOld:
+        return SC2OPT_C_INTEGRATION_API_MINOR_TOO_OLD;
+    case IntegrationStatus::UnitViewAbiMismatch:
+        return SC2OPT_C_INTEGRATION_UNIT_VIEW_ABI_MISMATCH;
+    case IntegrationStatus::RegistryBuildMismatch:
+        return SC2OPT_C_INTEGRATION_REGISTRY_BUILD_MISMATCH;
+    case IntegrationStatus::RegistryDataVersionMismatch:
+        return SC2OPT_C_INTEGRATION_REGISTRY_DATA_VERSION_MISMATCH;
+    case IntegrationStatus::MissingCapability:
+        return SC2OPT_C_INTEGRATION_MISSING_CAPABILITY;
+    }
+    return SC2OPT_C_INTEGRATION_MISSING_CAPABILITY;
 }
 
 bool ValidPointers(const float* xy, size_t xy_count, const void* output, size_t output_count,
@@ -46,9 +71,80 @@ uint32_t sc2opt_c_api_version_minor(void)
     return static_cast<uint32_t>(sc2opt::kApiContractMinor);
 }
 
+uint32_t sc2opt_c_unit_view_abi_version(void)
+{
+    return sc2opt::model::kUnitViewAbiVersion;
+}
+
+const char* sc2opt_c_package_version(void)
+{
+    return SC2OPT_VERSION_STRING;
+}
+
+const char* sc2opt_c_registry_build(void)
+{
+    return sc2opt::registry::kBase75689Build.data();
+}
+
+const char* sc2opt_c_registry_data_version(void)
+{
+    return sc2opt::registry::kBase75689DataVersion.data();
+}
+
 size_t sc2opt_c_registry_unit_count(void)
 {
     return sc2opt::registry::Base75689().units.size();
+}
+
+uint64_t sc2opt_c_integration_capabilities(void)
+{
+    return sc2opt::adapters::kSharedIntegrationCapabilities;
+}
+
+sc2opt_c_integration_status sc2opt_c_check_integration(
+    uint32_t expected_api_major,
+    uint32_t minimum_api_minor,
+    uint32_t expected_unit_view_abi,
+    const char* expected_sc2_build,
+    const char* expected_data_version,
+    uint64_t required_capabilities,
+    uint64_t* missing_capabilities)
+{
+    sc2opt::adapters::IntegrationRequirements requirements{};
+    requirements.api_major = expected_api_major;
+    requirements.minimum_api_minor = minimum_api_minor;
+    requirements.unit_view_abi = expected_unit_view_abi;
+    requirements.sc2_build = expected_sc2_build == nullptr ? std::string_view{} : expected_sc2_build;
+    requirements.data_version =
+        expected_data_version == nullptr ? std::string_view{} : expected_data_version;
+    requirements.required_capabilities = required_capabilities;
+
+    const auto report = sc2opt::adapters::CheckIntegrationCompatibility(requirements);
+    if (missing_capabilities != nullptr)
+        *missing_capabilities = report.missing_capabilities;
+    return ToCIntegrationStatus(report.status);
+}
+
+const char* sc2opt_c_integration_status_name(sc2opt_c_integration_status status)
+{
+    switch (status)
+    {
+    case SC2OPT_C_INTEGRATION_READY:
+        return "ready";
+    case SC2OPT_C_INTEGRATION_API_MAJOR_MISMATCH:
+        return "api_major_mismatch";
+    case SC2OPT_C_INTEGRATION_API_MINOR_TOO_OLD:
+        return "api_minor_too_old";
+    case SC2OPT_C_INTEGRATION_UNIT_VIEW_ABI_MISMATCH:
+        return "unit_view_abi_mismatch";
+    case SC2OPT_C_INTEGRATION_REGISTRY_BUILD_MISMATCH:
+        return "registry_build_mismatch";
+    case SC2OPT_C_INTEGRATION_REGISTRY_DATA_VERSION_MISMATCH:
+        return "registry_data_version_mismatch";
+    case SC2OPT_C_INTEGRATION_MISSING_CAPABILITY:
+        return "missing_capability";
+    }
+    return "unknown";
 }
 
 sc2opt_c_status sc2opt_c_distance_squared_into(const float* xy,
