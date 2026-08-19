@@ -50,30 +50,6 @@ sc2opt_c_integration_status ToCIntegrationStatus(sc2opt::adapters::IntegrationSt
     return SC2OPT_C_INTEGRATION_MISSING_CAPABILITY;
 }
 
-sc2opt::adapters::IntegrationStatus FromCIntegrationStatus(
-    sc2opt_c_integration_status status) noexcept
-{
-    using sc2opt::adapters::IntegrationStatus;
-    switch (status)
-    {
-    case SC2OPT_C_INTEGRATION_READY:
-        return IntegrationStatus::Ready;
-    case SC2OPT_C_INTEGRATION_API_MAJOR_MISMATCH:
-        return IntegrationStatus::ApiMajorMismatch;
-    case SC2OPT_C_INTEGRATION_API_MINOR_TOO_OLD:
-        return IntegrationStatus::ApiMinorTooOld;
-    case SC2OPT_C_INTEGRATION_UNIT_VIEW_ABI_MISMATCH:
-        return IntegrationStatus::UnitViewAbiMismatch;
-    case SC2OPT_C_INTEGRATION_REGISTRY_BUILD_MISMATCH:
-        return IntegrationStatus::RegistryBuildMismatch;
-    case SC2OPT_C_INTEGRATION_REGISTRY_DATA_VERSION_MISMATCH:
-        return IntegrationStatus::RegistryDataVersionMismatch;
-    case SC2OPT_C_INTEGRATION_MISSING_CAPABILITY:
-        return IntegrationStatus::MissingCapability;
-    }
-    return IntegrationStatus::MissingCapability;
-}
-
 bool ValidPointers(const float* xy, size_t xy_count, const void* output, size_t output_count,
                    const size_t* written) noexcept
 {
@@ -135,8 +111,8 @@ sc2opt_c_integration_status sc2opt_c_check_integration(
     uint64_t* missing_capabilities)
 {
     sc2opt::adapters::IntegrationRequirements requirements{};
-    requirements.api_major = static_cast<std::uint16_t>(expected_api_major);
-    requirements.minimum_api_minor = static_cast<std::uint16_t>(minimum_api_minor);
+    requirements.api_major = expected_api_major;
+    requirements.minimum_api_minor = minimum_api_minor;
     requirements.unit_view_abi = expected_unit_view_abi;
     requirements.sc2_build = expected_sc2_build == nullptr ? std::string_view{} : expected_sc2_build;
     requirements.data_version =
@@ -151,7 +127,24 @@ sc2opt_c_integration_status sc2opt_c_check_integration(
 
 const char* sc2opt_c_integration_status_name(sc2opt_c_integration_status status)
 {
-    return sc2opt::adapters::IntegrationStatusName(FromCIntegrationStatus(status)).data();
+    switch (status)
+    {
+    case SC2OPT_C_INTEGRATION_READY:
+        return "ready";
+    case SC2OPT_C_INTEGRATION_API_MAJOR_MISMATCH:
+        return "api_major_mismatch";
+    case SC2OPT_C_INTEGRATION_API_MINOR_TOO_OLD:
+        return "api_minor_too_old";
+    case SC2OPT_C_INTEGRATION_UNIT_VIEW_ABI_MISMATCH:
+        return "unit_view_abi_mismatch";
+    case SC2OPT_C_INTEGRATION_REGISTRY_BUILD_MISMATCH:
+        return "registry_build_mismatch";
+    case SC2OPT_C_INTEGRATION_REGISTRY_DATA_VERSION_MISMATCH:
+        return "registry_data_version_mismatch";
+    case SC2OPT_C_INTEGRATION_MISSING_CAPABILITY:
+        return "missing_capability";
+    }
+    return "unknown";
 }
 
 sc2opt_c_status sc2opt_c_distance_squared_into(const float* xy,
