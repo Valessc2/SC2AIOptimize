@@ -11,13 +11,13 @@ namespace sc2opt::adapters {
 
 enum IntegrationCapability : std::uint64_t {
     IntegrationCpuBaseline = 1ull << 0,
-    IntegrationSafeDisable = 1ull << 1,
+    IntegrationCompatibilityGate = 1ull << 1,
     IntegrationRegistryIdentity = 1ull << 2,
     IntegrationBatchGeometry = 1ull << 3
 };
 
 inline constexpr std::uint64_t kSharedIntegrationCapabilities =
-    IntegrationCpuBaseline | IntegrationSafeDisable | IntegrationRegistryIdentity |
+    IntegrationCpuBaseline | IntegrationCompatibilityGate | IntegrationRegistryIdentity |
     IntegrationBatchGeometry;
 
 enum class IntegrationStatus : std::uint8_t {
