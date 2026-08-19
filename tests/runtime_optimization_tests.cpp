@@ -1,5 +1,6 @@
 #include "sc2opt/tuner/BudgetGovernor.hpp"
 #include "sc2opt/tuner/Calibration.hpp"
+#include "sc2opt/tuner/Defaults.hpp"
 #include "sc2opt/tuner/Telemetry.hpp"
 
 #include <array>
@@ -50,37 +51,52 @@ void TestBudgetGovernor()
 {
     using namespace sc2opt::tuner;
 
+    // Default authority is OFF: SC2AIOptimize never limits consumer work unless explicitly
+    // delegated a budget.
     BudgetState state{};
-    state = UpdateBudgetState(state, 29'000'000);
+    state = UpdateBudgetState(state, 100'000'000);
+    Check(state.pressure == BudgetPressure::Normal && state.policy_valid,
+          "disabled governor never creates pressure");
+    Check(AllowsWork(state, WorkClass::Optional), "disabled governor allows all work");
+
+    const BudgetPolicy policy = BudgetPolicyFromEnvelope(40'000'000);
+    Check(policy.enabled && policy.resume_ns == 22'000'000 && policy.soft_ns == 28'000'000 &&
+              policy.hard_ns == 38'000'000,
+          "40ms envelope maps to 55/70/95 hysteresis profile");
+
+    state = UpdateBudgetState({}, 29'000'000, policy);
     Check(state.pressure == BudgetPressure::Soft, "soft budget pressure");
     Check(AllowsWork(state, WorkClass::Important) && !AllowsWork(state, WorkClass::Optional),
-          "soft pressure sheds optional work only");
+          "soft pressure sheds consumer-declared optional work only");
 
-    state = UpdateBudgetState(state, 23'000'000);
+    state = UpdateBudgetState(state, 23'000'000, policy);
     Check(state.pressure == BudgetPressure::Soft, "hysteresis retains soft pressure");
-    state = UpdateBudgetState(state, 21'000'000);
+    state = UpdateBudgetState(state, 21'000'000, policy);
     Check(state.pressure == BudgetPressure::Normal, "resume threshold clears pressure");
 
-    state = UpdateBudgetState(state, 40'000'000);
+    state = UpdateBudgetState(state, 40'000'000, policy);
     Check(state.pressure == BudgetPressure::Hard && !AllowsWork(state, WorkClass::Important),
-          "hard pressure allows critical work only");
+          "hard pressure allows critical work only after consumer opt-in");
 
-    const BudgetState invalid = UpdateBudgetState({}, 1, BudgetPolicy{30, 20, 40});
+    const BudgetState invalid = UpdateBudgetState({}, 1, BudgetPolicy{true, 30, 20, 40});
     Check(!invalid.policy_valid && AllowsWork(invalid, WorkClass::Critical) &&
               !AllowsWork(invalid, WorkClass::Optional),
-          "invalid budget policy fails closed");
+          "invalid enabled budget policy fails closed");
+
+    const BudgetPolicy zero = BudgetPolicyFromEnvelope(0);
+    Check(!zero.enabled, "zero envelope leaves governor disabled");
 }
 
 void TestCalibration()
 {
     using namespace sc2opt::tuner;
 
-    const std::array small{CandidateEvidence{0, 10, 100.0, true},
-                           CandidateEvidence{1, 10, 120.0, true}};
-    const std::array medium{CandidateEvidence{0, 10, 100.0, true},
-                            CandidateEvidence{1, 10, 70.0, true}};
-    const std::array large{CandidateEvidence{0, 10, 100.0, true},
-                           CandidateEvidence{1, 10, 60.0, true}};
+    const std::array small{CandidateEvidence{0, 20, 100'000.0, true},
+                           CandidateEvidence{1, 20, 120'000.0, true}};
+    const std::array medium{CandidateEvidence{0, 20, 100'000.0, true},
+                            CandidateEvidence{1, 20, 70'000.0, true}};
+    const std::array large{CandidateEvidence{0, 20, 100'000.0, true},
+                           CandidateEvidence{1, 20, 60'000.0, true}};
     const std::array points{CalibrationPoint{8, small}, CalibrationPoint{32, medium},
                             CalibrationPoint{128, large}};
 
@@ -98,9 +114,11 @@ void TestCalibration()
     Check(SelectCrossoverChampion(calibrated, 50) == 1, "calibrated crossover selector");
 
     Check(CheckControlOverhead(5, 1000).accepted, "cheap control overhead accepted");
-    Check(!CheckControlOverhead(20, 1000).accepted, "expensive control overhead rejected");
+    Check(!CheckControlOverhead(20, 1000).accepted, "expensive relative control overhead rejected");
+    Check(!CheckControlOverhead(60'000, 100'000'000).accepted,
+          "absolute control overhead ceiling enforced");
 
-    const std::array no_baseline{CandidateEvidence{1, 10, 50.0, true}};
+    const std::array no_baseline{CandidateEvidence{1, 20, 50'000.0, true}};
     const std::array missing{CalibrationPoint{8, no_baseline}};
     Check(BuildCrossoverCalibration(missing, bands).issue == CalibrationIssue::MissingBaseline,
           "calibration requires baseline evidence");
@@ -110,6 +128,13 @@ void TestCalibration()
     Check(invalid_policy.reason == DecisionReason::PolicyInvalid &&
               invalid_policy.champion == kBaselineCandidate,
           "invalid net-benefit policy fails closed");
+
+    Check(defaults::kWorkloadSizeCandidates.front() == 8 &&
+              defaults::kWorkloadSizeCandidates.back() == 1024,
+          "geometric workload seed range");
+    Check(defaults::kSpatialCellSizeCandidates.front() == 2.0f &&
+              defaults::kSpatialCellSizeCandidates.back() == 12.0f,
+          "spatial cell seed range");
 }
 
 }  // namespace

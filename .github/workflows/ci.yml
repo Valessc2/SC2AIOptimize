@@ -52,6 +52,65 @@ jobs:
       - name: Test Python adapter
         run: ctest --test-dir build-python -C Release --output-on-failure
 
+  c-abi-adapter:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure C ABI
+        run: >-
+          cmake -S . -B build-cabi -DCMAKE_BUILD_TYPE=Release
+          -DSC2OPT_BUILD_TESTS=ON -DSC2OPT_BUILD_C_ABI=ON
+          -DSC2OPT_WARNINGS_AS_ERRORS=ON
+      - name: Build C ABI
+        run: cmake --build build-cabi --config Release
+      - name: Test C ABI
+        run: ctest --test-dir build-cabi -C Release --output-on-failure
+
+  language-edge-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Install Node development headers
+        run: sudo apt-get update && sudo apt-get install -y libnode-dev
+      - name: Configure C ABI + Java + Node edges
+        run: >-
+          cmake -S . -B build-edges -DCMAKE_BUILD_TYPE=Release
+          -DSC2OPT_BUILD_TESTS=OFF -DSC2OPT_BUILD_C_ABI=ON
+          -DSC2OPT_BUILD_JAVA_JNI=ON -DSC2OPT_BUILD_NODE_NAPI=ON
+          -DSC2OPT_NODE_INCLUDE_DIR=/usr/include/node
+          -DSC2OPT_WARNINGS_AS_ERRORS=ON
+      - name: Build native language edges
+        run: cmake --build build-edges --parallel 2
+      - name: Compile Java edge
+        run: javac -d build-java Adapters/Java/SC2AIOptimize.java
+      - name: Check Node loader
+        run: node --check Adapters/Node/index.js
+      - name: Compile Rust edge
+        run: rustc --edition 2021 --crate-type lib Adapters/Rust/sc2opt.rs -o build-rust.rlib
+      - name: Compile .NET edge
+        run: dotnet build Adapters/DotNet/SC2AIOptimize.csproj -c Release
+      - name: Compile and load Go edge
+        working-directory: Adapters/Go
+        env:
+          CGO_CFLAGS: -I${{ github.workspace }}/include
+          CGO_LDFLAGS: -L${{ github.workspace }}/build-edges -lsc2opt_c
+          LD_LIBRARY_PATH: ${{ github.workspace }}/build-edges
+        run: go test ./...
+
   sanitizers:
     runs-on: ubuntu-latest
     steps:

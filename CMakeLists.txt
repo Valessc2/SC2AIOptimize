@@ -8,6 +8,9 @@ include(cmake/SC2OptHardening.cmake)
 option(SC2OPT_BUILD_TESTS "Build SC2AIOptimize tests" ON)
 option(SC2OPT_BUILD_BENCHMARKS "Build calibration/benchmark tools" OFF)
 option(SC2OPT_BUILD_PYTHON "Build the optional generic Python adapter" OFF)
+option(SC2OPT_BUILD_C_ABI "Build the optional stable C ABI for non-C++ language edges" OFF)
+option(SC2OPT_BUILD_JAVA_JNI "Build the optional Java 17 JNI edge over the C ABI" OFF)
+option(SC2OPT_BUILD_NODE_NAPI "Build the optional Node.js N-API edge over the C ABI" OFF)
 option(SC2OPT_WARNINGS_AS_ERRORS "Treat project warnings as errors" OFF)
 option(SC2OPT_ENABLE_ASAN "Enable AddressSanitizer" OFF)
 option(SC2OPT_ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
@@ -17,9 +20,14 @@ option(SC2OPT_PGO_GENERATE "Build with PGO instrumentation" OFF)
 option(SC2OPT_PGO_USE "Build using a trained PGO profile" OFF)
 option(SC2OPT_ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
 set(SC2OPT_PGO_PROFILE_DIR "" CACHE PATH "PGO profile directory for GNU PGO")
+set(SC2OPT_NODE_INCLUDE_DIR "" CACHE PATH "Directory containing node_api.h for the optional Node N-API edge")
 
 if(SC2OPT_PGO_GENERATE AND SC2OPT_PGO_USE)
     message(FATAL_ERROR "SC2OPT_PGO_GENERATE and SC2OPT_PGO_USE are mutually exclusive")
+endif()
+
+if((SC2OPT_BUILD_JAVA_JNI OR SC2OPT_BUILD_NODE_NAPI) AND NOT SC2OPT_BUILD_C_ABI)
+    message(FATAL_ERROR "Java JNI and Node N-API edges require SC2OPT_BUILD_C_ABI=ON")
 endif()
 
 if(SC2OPT_ENABLE_CLANG_TIDY)
@@ -125,6 +133,20 @@ target_link_libraries(sc2opt INTERFACE
     sc2opt_adapters
 )
 
+if(SC2OPT_BUILD_C_ABI)
+    add_library(sc2opt_c SHARED Adapters/C/sc2opt_c.cpp)
+    add_library(sc2opt::c ALIAS sc2opt_c)
+    set_target_properties(sc2opt_c PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        EXPORT_NAME c
+        OUTPUT_NAME sc2opt_c
+    )
+    sc2opt_public_includes(sc2opt_c)
+    target_link_libraries(sc2opt_c PRIVATE sc2opt_kernel sc2opt_registry)
+    target_compile_features(sc2opt_c PRIVATE cxx_std_20)
+    sc2opt_apply_project_settings(sc2opt_c)
+endif()
+
 if(SC2OPT_BUILD_PYTHON)
     find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
     set(PYBIND11_FINDPYTHON ON)
@@ -134,6 +156,27 @@ if(SC2OPT_BUILD_PYTHON)
     target_link_libraries(_sc2opt PRIVATE sc2opt)
     target_compile_features(_sc2opt PRIVATE cxx_std_20)
     sc2opt_apply_project_settings(_sc2opt)
+endif()
+
+if(SC2OPT_BUILD_JAVA_JNI)
+    find_package(JNI REQUIRED)
+    add_library(sc2opt_jni MODULE Adapters/Java/sc2opt_jni.cpp)
+    target_include_directories(sc2opt_jni PRIVATE ${JNI_INCLUDE_DIRS})
+    target_link_libraries(sc2opt_jni PRIVATE sc2opt_c)
+    target_compile_features(sc2opt_jni PRIVATE cxx_std_20)
+    sc2opt_apply_project_settings(sc2opt_jni)
+endif()
+
+if(SC2OPT_BUILD_NODE_NAPI)
+    if(NOT SC2OPT_NODE_INCLUDE_DIR OR NOT EXISTS "${SC2OPT_NODE_INCLUDE_DIR}/node_api.h")
+        message(FATAL_ERROR "SC2OPT_BUILD_NODE_NAPI requires SC2OPT_NODE_INCLUDE_DIR containing node_api.h")
+    endif()
+    add_library(sc2opt_node MODULE Adapters/Node/sc2opt_napi.cpp)
+    target_include_directories(sc2opt_node PRIVATE ${SC2OPT_NODE_INCLUDE_DIR})
+    target_link_libraries(sc2opt_node PRIVATE sc2opt_c)
+    target_compile_features(sc2opt_node PRIVATE cxx_std_20)
+    set_target_properties(sc2opt_node PROPERTIES PREFIX "" SUFFIX ".node" OUTPUT_NAME "sc2opt")
+    sc2opt_apply_project_settings(sc2opt_node)
 endif()
 
 if(SC2OPT_BUILD_TESTS)
@@ -168,6 +211,14 @@ if(SC2OPT_BUILD_TESTS)
     sc2opt_apply_project_settings(sc2opt_performance_regression_tests)
     add_test(NAME sc2opt_performance_regression_tests COMMAND sc2opt_performance_regression_tests)
 
+    if(SC2OPT_BUILD_C_ABI)
+        add_executable(sc2opt_c_abi_tests tests/c_abi_tests.cpp)
+        target_link_libraries(sc2opt_c_abi_tests PRIVATE sc2opt_c)
+        target_compile_features(sc2opt_c_abi_tests PRIVATE cxx_std_20)
+        sc2opt_apply_project_settings(sc2opt_c_abi_tests)
+        add_test(NAME sc2opt_c_abi_tests COMMAND sc2opt_c_abi_tests)
+    endif()
+
     if(SC2OPT_BUILD_PYTHON)
         add_test(
             NAME sc2opt_python_adapter
@@ -199,6 +250,17 @@ install(TARGETS
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+if(SC2OPT_BUILD_C_ABI)
+    install(TARGETS sc2opt_c
+        EXPORT SC2AIOptimizeTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+endif()
+
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 configure_package_config_file(

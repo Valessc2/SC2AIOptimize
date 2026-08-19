@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sc2opt/tuner/Context.hpp"
+#include "sc2opt/tuner/Defaults.hpp"
 #include "sc2opt/tuner/NetBenefit.hpp"
 
 #include <cstddef>
@@ -39,8 +40,8 @@ struct CalibrationResult {
     NetBenefitPolicy policy = {}) noexcept;
 
 struct ControlOverheadPolicy {
-    std::uint64_t maximum_absolute_ns = 0;  // 0 disables the absolute ceiling.
-    double maximum_fraction_of_work = 0.01;
+    std::uint64_t maximum_absolute_ns = defaults::kMaximumControlOverheadNs;
+    double maximum_fraction_of_work = defaults::kMaximumControlOverheadFraction;
 };
 
 struct ControlOverheadDecision {

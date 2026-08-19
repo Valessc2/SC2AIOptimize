@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sc2opt/tuner/Defaults.hpp"
 #include "sc2opt/tuner/NetBenefit.hpp"
 
 #include <cstdint>
@@ -35,10 +36,10 @@ struct ChampionState {
 };
 
 struct ChampionPolicy {
-    std::uint64_t minimum_samples = 5;
-    double minimum_absolute_gain_ns = 0.0;
-    double minimum_relative_gain = 0.0;
-    double z_score = 1.96;
+    std::uint64_t minimum_samples = defaults::kOperationalMinimumSamples;
+    double minimum_absolute_gain_ns = static_cast<double>(defaults::kMinimumAbsoluteGainNs);
+    double minimum_relative_gain = defaults::kMinimumRelativeGain;
+    double z_score = defaults::kChampionZScore;
     bool require_confidence_separation = true;
 };
 
